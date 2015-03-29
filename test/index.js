@@ -1,55 +1,127 @@
 var test = require('tape');
 var _ = require('lodash');
-var async = require('async');
 var Waitr = require('../lib');
 
-test('emits right events and has right state at right times', function(t){
-	var reps = 8;
+var events = ['waiting', 'ready'];
+
+test('emits "waiting" once "waiting", and "ready" once "ready" plus an event loop cycle', function(t){
+	var reps = 10;
 	t.plan(reps * 7);
 	var w = new Waitr;
-	async.eachSeries(_.range(reps), function(i, cb){
-		// 1
+	eachSeries(_.range(reps), function(i, cb){
+// 1
 		t.ok(w.ready && !w.waiting);
 
-		// 2
-		var end = gatherEvents(w, ['waiting', 'ready']);
-		var unwaits = _.map(_.range(random(1, 8)), function(j){
+		var end = gatherEvents(w, events);
+		var unwaits = _.map(_.range(_.random(1, 8)), function(j){
 			return w.wait();
 		});
-		var events = end();
-		t.deepEqual(events, ['waiting']);
+		var gathered = end();
+// 2
+		t.deepEqual(gathered, ['waiting']);
 
-		// 3
+// 3
 		t.ok(w.waiting && !w.ready);
 
-		// 4
-		end = gatherEvents(w, ['waiting', 'ready']);
+		end = gatherEvents(w, events);
 		_.forEach(_.shuffle(unwaits), function(unwait){
 			unwait();
 		});
-		events = end();
-		t.deepEqual(events, []);
+		gathered = end();
+// 4
+		t.deepEqual(gathered, []);
 
-		// 5
+// 5
 		t.ok(w.waiting && !w.ready);
 
-		// 6
-		end = gatherEvents(w, ['waiting', 'ready']);
-		setTimeout(function(){
-			events = end();
-			t.deepEqual(events, ['ready']);
+		end = gatherEvents(w, events);
+		process.nextTick(function(){
+			gathered = end();
+// 6
+			t.deepEqual(gathered, ['ready']);
 
-		// 7
+// 7
 			t.ok(w.ready && !w.waiting);
 
 			cb(null);
-		}, 0);
+		});
 	});
 });
 
-function random(from, to){
-	return from + Math.floor((to - from + 1) * Math.random())
-}
+test('properly wrap api object', function(t){
+	var reps = 10;
+	var good_result = 'good result';
+	var good_error = new Error('fake');
+	t.plan(reps * 8);
+	var w = new Waitr;
+	var api = w.wrap({
+		fail: function(){
+			return new Promise(function(resolve, reject){
+				setTimeout(function(){
+					reject(good_error);
+				}, _.random(1, 100));
+			});
+		},
+		succeed: function(){
+			return new Promise(function(resolve, reject){
+				setTimeout(function(){
+					resolve(good_result);
+				}, _.random(1, 100));
+			});
+		}
+	});
+
+	eachSeries(_.range(reps), function(i, cb){
+
+// 1
+		t.ok(w.ready && !w.waiting);
+
+		var end = gatherEvents(w, events);
+		var promise = api[i%2 ? 'fail' : 'succeed']();
+		var gathered = end();
+// 2
+		t.deepEqual(gathered, ['waiting']);
+
+// 3
+		t.ok(w.waiting && !w.ready);
+
+		if (i%2){
+			promise.then(undefined, function(error){
+// 4a
+				t.ok(error==good_error);
+			});
+		} else {
+			promise.then(function(result) {
+// 4b
+				t.ok(result==good_result)
+			}, undefined);
+		}
+
+		end = gatherEvents(w, events);
+		var always = function(){
+			gathered = end();
+// 5
+			t.deepEqual(gathered, []);
+
+// 6
+			t.ok(w.waiting && !w.ready);
+
+			end = gatherEvents(w, events);
+			process.nextTick(function(){
+				gathered = end();
+// 7
+				t.deepEqual(gathered, ['ready']);
+
+// 8
+				t.ok(w.ready && !w.waiting);
+
+				cb(null)
+			});
+		};
+		promise.then(always, always);
+	});
+
+});
 
 function gatherEvents(obj, possible){
 	var event_listeners = {};
@@ -65,4 +137,27 @@ function gatherEvents(obj, possible){
 		});
 		return gathered;
 	}
+}
+
+function eachSeries(array, iterator, cb) {
+	var i = 0;
+	var loop = function(){
+		if (i==array.length){
+			if (typeof cb=='function'){
+				cb(null);
+			}
+			return;
+		}
+		iterator(array[i], function(error){
+			if (error){
+				if (typeof cb=='function'){
+					cb(error);
+				}
+				return;
+			}
+			i++;
+			loop();
+		})
+	};
+	loop();
 }
