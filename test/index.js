@@ -45,6 +45,9 @@ test('emits "waiting" once "waiting", and "ready" once "ready" plus an event loo
 
 			cb(null);
 		});
+	}, function(error){
+		if (error){throw error;}
+		w.destroy();
 	});
 });
 
@@ -119,6 +122,10 @@ test('properly wrap api object', function(t){
 			});
 		};
 		promise.then(always, always);
+
+	}, function(error){
+		if (error){throw error;}
+		w.destroy();
 	});
 
 });
