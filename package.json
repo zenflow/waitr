@@ -1,6 +1,6 @@
 {
   "name": "waitr",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Determine and observe the 'readiness' of an asynchronously updating system of values",
   "keywords": [
     "async",
