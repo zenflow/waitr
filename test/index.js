@@ -5,54 +5,50 @@ var Waitr = require('../lib');
 var events = ['waiting', 'ready'];
 
 test('emits "waiting" once "waiting", and "ready" once "ready" plus an event loop cycle', function(t){
-	var reps = 10;
-	t.plan(reps * 7);
+	t.plan(7);
 	var w = new Waitr;
-	eachSeries(_.range(reps), function(i, cb){
-// 1
-		t.ok(w.ready && !w.waiting);
 
-		var end = gatherEvents(w, events);
-		var unwaits = _.map(_.range(_.random(1, 8)), function(j){
-			return w.wait();
-		});
-		var gathered = end();
+// 1
+	t.ok(w.ready && !w.waiting);
+
+	var end = gatherEvents(w, events);
+	var unwaits = _.map(_.range(_.random(1, 8)), function(j){
+		return w.wait();
+	});
+	var gathered = end();
 // 2
-		t.deepEqual(gathered, ['waiting']);
+	t.deepEqual(gathered, ['waiting']);
 
 // 3
-		t.ok(w.waiting && !w.ready);
+	t.ok(w.waiting && !w.ready);
 
-		end = gatherEvents(w, events);
-		_.forEach(_.shuffle(unwaits), function(unwait){
-			unwait();
-		});
-		gathered = end();
+	end = gatherEvents(w, events);
+	_.forEach(_.shuffle(unwaits), function(unwait){
+		unwait();
+	});
+	gathered = end();
 // 4
-		t.deepEqual(gathered, []);
+	t.deepEqual(gathered, []);
 
 // 5
-		t.ok(w.waiting && !w.ready);
+	t.ok(w.waiting && !w.ready);
 
-		end = gatherEvents(w, events);
-		process.nextTick(function(){
-			gathered = end();
+	end = gatherEvents(w, events);
+	process.nextTick(function(){
+		gathered = end();
 // 6
-			t.deepEqual(gathered, ['ready']);
+		t.deepEqual(gathered, ['ready']);
 
 // 7
-			t.ok(w.ready && !w.waiting);
+		t.ok(w.ready && !w.waiting);
 
-			cb(null);
-		});
-	}, function(error){
-		if (error){throw error;}
+// teardown
 		w.destroy();
 	});
 });
 
 test('properly wrap api object', function(t){
-	var reps = 10;
+	var reps = 3;
 	var good_result = 'good result';
 	var good_error = new Error('fake');
 	t.plan(reps * 8);
