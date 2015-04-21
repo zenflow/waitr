@@ -4,7 +4,7 @@ var Waitr = require('../lib');
 
 var events = ['waiting', 'ready'];
 
-test('emits "waiting" once "waiting", and "ready" once "ready" plus an event loop cycle', function(t){
+test('emits "waiting" once "waiting", and "ready" once "ready"+nextTick', function(t){
 	t.plan(7);
 	var w = new Waitr;
 
@@ -124,6 +124,52 @@ test('properly wrap api object', function(t){
 		w.destroy();
 	});
 
+});
+
+test('immediateReady: false (default)', function(t){
+	t.plan(1);
+	var order = [];
+	var report = function(n){
+		order.push(n);
+		if (order.length == 3){
+			t.deepEqual(order, [1, 2, 3]);
+		}
+	};
+	var w = new Waitr;
+	w.once('ready', function(){
+		report(2);
+	});
+	var unwait = w.wait();
+	process.nextTick(function(){
+		report(1);
+	});
+	unwait();
+	process.nextTick(function(){
+		report(3);
+	});
+});
+
+test('immediateReady: true', function(t){
+	t.plan(1);
+	var order = [];
+	var report = function(n){
+		order.push(n);
+		if (order.length == 3){
+			t.deepEqual(order, [1, 2, 3]);
+		}
+	};
+	var w = new Waitr({immediateReady: true});
+	w.once('ready', function(){
+		report(1);
+	});
+	var unwait = w.wait();
+	process.nextTick(function(){
+		report(2);
+	});
+	unwait();
+	process.nextTick(function(){
+		report(3);
+	});
 });
 
 function gatherEvents(obj, possible){
