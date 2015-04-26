@@ -1,0 +1,1 @@
+waitr.extend to support node-style callbacks by identifying fn.toString().match(/function(...cb){...}/)
