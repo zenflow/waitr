@@ -12,7 +12,7 @@
   ],
   "main": "lib/index.js",
   "scripts": {
-    "test": "node test/index.js | node_modules\\.bin\\tap-spec"
+    "test": "node test/index.js | \"node_modules/.bin/tap-spec\""
   },
   "author": {
     "name": "Matthew Francis Brunetti",
