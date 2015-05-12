@@ -9,7 +9,7 @@ test('emits "waiting" once "waiting", and "ready" once "ready"+nextTick', functi
 	var w = new Waitr;
 
 // 1
-	t.ok(w.ready && !w.waiting);
+	t.ok(w.ready && !w.waiting, '1');
 
 	var end = gatherEvents(w, events);
 	var unwaits = _.map(_.range(_.random(1, 8)), function(j){
@@ -17,10 +17,10 @@ test('emits "waiting" once "waiting", and "ready" once "ready"+nextTick', functi
 	});
 	var gathered = end();
 // 2
-	t.deepEqual(gathered, ['waiting']);
+	t.deepEqual(gathered, ['waiting'], '2');
 
 // 3
-	t.ok(w.waiting && !w.ready);
+	t.ok(w.waiting && !w.ready, '3');
 
 	end = gatherEvents(w, events);
 	_.forEach(_.shuffle(unwaits), function(unwait){
@@ -28,19 +28,19 @@ test('emits "waiting" once "waiting", and "ready" once "ready"+nextTick', functi
 	});
 	gathered = end();
 // 4
-	t.deepEqual(gathered, []);
+	t.deepEqual(gathered, [], '4');
 
 // 5
-	t.ok(w.waiting && !w.ready);
+	t.ok(w.waiting && !w.ready, '5');
 
 	end = gatherEvents(w, events);
 	process.nextTick(function(){
 		gathered = end();
 // 6
-		t.deepEqual(gathered, ['ready']);
+		t.deepEqual(gathered, ['ready'], '6');
 
 // 7
-		t.ok(w.ready && !w.waiting);
+		t.ok(w.ready && !w.waiting, '7');
 
 // teardown
 		w.destroy();
@@ -48,10 +48,11 @@ test('emits "waiting" once "waiting", and "ready" once "ready"+nextTick', functi
 });
 
 test('properly wrap api object', function(t){
-	var reps = 3;
+	var iterations = 2;
+	var plan_per_iteration = 8;
 	var good_result = 'good result';
 	var good_error = new Error('fake');
-	t.plan(reps * 8);
+	t.plan(iterations * plan_per_iteration);
 	var w = new Waitr;
 	var api = w.wrap({
 		fail: function(){
@@ -70,49 +71,49 @@ test('properly wrap api object', function(t){
 		}
 	});
 
-	eachSeries(_.range(reps), function(i, cb){
+	eachSeries(_.range(iterations), function(i, cb){
 
 // 1
-		t.ok(w.ready && !w.waiting);
+		t.ok(w.ready && !w.waiting, '1');
 
 		var end = gatherEvents(w, events);
 		var promise = api[i%2 ? 'fail' : 'succeed']();
 		var gathered = end();
 // 2
-		t.deepEqual(gathered, ['waiting']);
+		t.deepEqual(gathered, ['waiting'], '2');
 
 // 3
-		t.ok(w.waiting && !w.ready);
+		t.ok(w.waiting && !w.ready, '3');
 
 		if (i%2){
-			promise.then(undefined, function(error){
+			promise.catch(function(error){
 // 4a
-				t.ok(error==good_error);
+				t.equal(error, good_error, '4a');
 			});
 		} else {
 			promise.then(function(result) {
 // 4b
-				t.ok(result==good_result)
-			}, undefined);
+				t.equal(result, good_result, '4b')
+			});
 		}
 
 		end = gatherEvents(w, events);
 		var always = function(){
 			gathered = end();
 // 5
-			t.deepEqual(gathered, []);
+			t.deepEqual(gathered, [], '5');
 
 // 6
-			t.ok(w.waiting && !w.ready);
+			t.ok(w.waiting && !w.ready, '6');
 
 			end = gatherEvents(w, events);
 			process.nextTick(function(){
 				gathered = end();
 // 7
-				t.deepEqual(gathered, ['ready']);
+				t.deepEqual(gathered, ['ready'], '7');
 
 // 8
-				t.ok(w.ready && !w.waiting);
+				t.ok(w.ready && !w.waiting, '8');
 
 				cb(null)
 			});
