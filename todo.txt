@@ -1,4 +1,4 @@
-make behavior re. ready/waiting symmetrical
+make behavior re. ready/waiting symmetrical?
 support ci for earlier node versions by eliminating test's dependancy on global Promise
 automatically publish to npm from travis
 waitr.extend to support node-style callbacks by identifying fn.toString().match(/function(...cb){...}/) ?
